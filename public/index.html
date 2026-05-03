@@ -3,215 +3,617 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PaySafeCard Payment</title>
+  <title>Checkout</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1a1a2e;
+      background: #121212;
+      color: #e0e0e0;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
+      padding: 2rem 1rem;
     }
 
-    .card {
-      background: #16213e;
-      border: 1px solid #0f3460;
-      border-radius: 16px;
-      padding: 2.5rem 2rem;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    a { color: inherit; }
+
+    /* ── Layout ── */
+    .checkout-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 2.5rem;
+      align-items: start;
     }
 
-    .logo {
-      text-align: center;
-      margin-bottom: 1.5rem;
+    @media (max-width: 780px) {
+      .checkout-wrap { grid-template-columns: 1fr; }
+      .order-col { order: -1; }
     }
 
-    .logo svg {
-      width: 56px;
-      height: 56px;
+    /* ── Section headers ── */
+    .section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #aaa;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.2rem;
     }
 
-    h1 {
-      text-align: center;
-      color: #e94560;
-      font-size: 1.4rem;
-      margin-bottom: 0.4rem;
+    /* ── Form fields ── */
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
 
-    .subtitle {
-      text-align: center;
-      color: #8892b0;
-      font-size: 0.9rem;
-      margin-bottom: 2rem;
-    }
+    .field { margin-bottom: 1rem; }
 
     label {
       display: block;
-      color: #ccd6f6;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      margin-bottom: 0.4rem;
-      letter-spacing: 0.03em;
+      color: #ccc;
+      margin-bottom: 0.35rem;
     }
+
+    label .req { color: #e94560; }
 
     input[type="text"],
     input[type="email"],
-    input[type="number"],
+    textarea,
     select {
       width: 100%;
-      padding: 0.7rem 1rem;
-      background: #0f3460;
-      border: 1px solid #1a4a7a;
-      border-radius: 8px;
-      color: #e6f1ff;
-      font-size: 1rem;
+      padding: 0.65rem 0.9rem;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 0.95rem;
       outline: none;
-      transition: border-color 0.2s;
-      margin-bottom: 1.2rem;
+      transition: border-color 0.15s;
+      appearance: none;
     }
 
-    input:focus, select:focus {
-      border-color: #e94560;
+    input:focus, textarea:focus, select:focus { border-color: #555; }
+
+    textarea { resize: vertical; min-height: 90px; }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: #888;
+      font-size: 0.8rem;
+    }
+    .select-wrap select { padding-right: 2rem; }
+
+    /* ── Checkbox ── */
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+    .check-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: #e94560; flex-shrink: 0; }
+    .check-row label { margin: 0; font-size: 0.88rem; font-weight: 400; color: #ccc; }
+
+    /* ── Right column card ── */
+    .order-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 1.5rem;
     }
 
-    select option { background: #0f3460; }
-
-    .pin-note {
-      color: #8892b0;
+    /* ── Order summary ── */
+    .order-title {
       font-size: 0.78rem;
-      margin-top: -1rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #aaa;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 0.5rem;
       margin-bottom: 1.2rem;
     }
 
-    button[type="submit"] {
+    .product-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.8rem;
+    }
+
+    .product-name { font-weight: 600; font-size: 0.95rem; }
+
+    .qty-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.3rem;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .qty-btn {
+      width: 22px; height: 22px;
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 3px;
+      color: #ccc;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+      padding: 0;
+    }
+    .qty-btn:hover { background: #333; }
+
+    .product-price { font-weight: 600; white-space: nowrap; }
+
+    .license-row {
+      font-size: 0.82rem;
+      color: #aaa;
+      margin-bottom: 1rem;
+    }
+
+    .summary-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      padding: 0.5rem 0;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .summary-line.total {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    /* ── Payment methods ── */
+    .payment-methods { margin-top: 1.2rem; }
+
+    .pay-option {
+      margin-bottom: 0.3rem;
+    }
+
+    .pay-label {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      padding: 0.3rem 0;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .pay-label input[type="radio"] { accent-color: #e94560; width: 15px; height: 15px; }
+
+    .pay-detail {
+      display: none;
+      margin: 0.8rem 0 0.5rem 1.6rem;
+    }
+    .pay-detail.active { display: block; }
+
+    /* PIN area */
+    .pin-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #ccc;
+      margin-bottom: 0.5rem;
+    }
+
+    .pin-entry {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pin-entry input {
+      flex: 1;
+      padding: 0.6rem 0.8rem;
+      background: #252525;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .pin-entry input:focus { border-color: #555; }
+
+    .btn-add-pin {
+      padding: 0.6rem 0.9rem;
+      background: #22a559;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-add-pin:hover { background: #1e9450; }
+
+    .pin-list { margin-bottom: 0.6rem; }
+    .pin-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 3px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.8rem;
+      color: #ccc;
+      margin: 0.2rem 0.2rem 0.2rem 0;
+    }
+    .pin-tag .rm {
+      cursor: pointer;
+      color: #888;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .pin-tag .rm:hover { color: #e94560; }
+
+    .psc-country-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #ccc;
+      margin: 0.6rem 0 0.4rem;
+    }
+
+    /* ── Privacy note ── */
+    .privacy-note {
+      font-size: 0.78rem;
+      color: #888;
+      line-height: 1.5;
+      margin: 1rem 0;
+    }
+
+    /* ── Place Order button ── */
+    .btn-place-order {
       width: 100%;
-      padding: 0.85rem;
+      padding: 0.9rem;
       background: #e94560;
       color: #fff;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
       font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 0.4rem;
+      transition: background 0.15s;
     }
+    .btn-place-order:hover { background: #c73652; }
+    .btn-place-order:disabled { background: #555; cursor: not-allowed; }
 
-    button[type="submit"]:hover { background: #c73652; }
-    button[type="submit"]:active { transform: scale(0.98); }
-    button[type="submit"]:disabled { background: #555; cursor: not-allowed; }
-
+    /* ── Status message ── */
     #status {
-      margin-top: 1.2rem;
-      text-align: center;
-      font-size: 0.9rem;
-      min-height: 1.2rem;
+      margin-top: 0.9rem;
+      padding: 0.7rem 1rem;
+      border-radius: 4px;
+      font-size: 0.88rem;
+      display: none;
     }
-
-    .status-ok  { color: #43b581; }
-    .status-err { color: #f04747; }
+    #status.ok  { display: block; background: #1a3a2a; border: 1px solid #22a559; color: #43d47a; }
+    #status.err { display: block; background: #3a1a1a; border: 1px solid #e94560; color: #f07070; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="logo">
-      <!-- PaySafeCard-style icon -->
-      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="56" height="56" rx="12" fill="#e94560"/>
-        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
-              font-size="26" font-weight="bold" fill="white" font-family="sans-serif">PSC</text>
-      </svg>
+<div class="checkout-wrap">
+
+  <!-- ── Left: Billing ── -->
+  <div class="billing-col">
+    <div class="section-title">Billing Details</div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>First Name <span class="req">*</span></label>
+        <input type="text" id="firstName" placeholder="" required />
+      </div>
+      <div class="field">
+        <label>Last Name <span class="req">*</span></label>
+        <input type="text" id="lastName" placeholder="" required />
+      </div>
     </div>
-    <h1>PaySafeCard Payment</h1>
-    <p class="subtitle">Enter your voucher details to complete the order</p>
 
-    <form id="orderForm">
-      <label for="email">Your Email</label>
-      <input type="email" id="email" name="email" placeholder="you@example.com" required />
+    <div class="field">
+      <label>Country / Region <span class="req">*</span></label>
+      <div class="select-wrap">
+        <select id="billingCountry" required>
+          <option value="Germany">Germany</option>
+          <option value="Austria">Austria</option>
+          <option value="Switzerland">Switzerland</option>
+          <option value="Netherlands">Netherlands</option>
+          <option value="Belgium">Belgium</option>
+          <option value="France">France</option>
+          <option value="United Kingdom">United Kingdom</option>
+          <option value="Spain">Spain</option>
+          <option value="Italy">Italy</option>
+          <option value="Poland">Poland</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
 
-      <label for="amount">Amount (EUR)</label>
-      <input type="number" id="amount" name="amount" min="0.01" step="0.01" placeholder="e.g. 10.00" required />
+    <div class="field">
+      <label>Email Address <span class="req">*</span></label>
+      <input type="email" id="email" required />
+    </div>
 
-      <label for="country">Country</label>
-      <select id="country" name="country" required>
-        <option value="" disabled selected>Select country…</option>
-        <option value="Germany">Germany</option>
-        <option value="Austria">Austria</option>
-        <option value="Switzerland">Switzerland</option>
-        <option value="Netherlands">Netherlands</option>
-        <option value="Belgium">Belgium</option>
-        <option value="France">France</option>
-        <option value="United Kingdom">United Kingdom</option>
-        <option value="Spain">Spain</option>
-        <option value="Italy">Italy</option>
-        <option value="Poland">Poland</option>
-        <option value="Other">Other</option>
-      </select>
+    <div class="field">
+      <label>Discord Username <span class="req">*</span></label>
+      <input type="text" id="discord" placeholder="" required />
+    </div>
 
-      <label for="pin">PaySafeCard PIN(s)</label>
-      <input type="text" id="pin" name="pin"
-             placeholder="e.g. 1234-5678-9012-3456"
-             pattern="[\d\-\s,]+"
-             title="Digits, dashes, spaces or commas (for multiple PINs)"
-             required />
-      <p class="pin-note">Multiple PINs? Separate them with a comma.</p>
+    <div class="section-title" style="margin-top:1.5rem;">New Customer</div>
 
-      <button type="submit" id="submitBtn">Submit Order</button>
-    </form>
+    <div class="check-row">
+      <input type="checkbox" id="createAccount" />
+      <label for="createAccount">Create an account?</label>
+    </div>
 
-    <div id="status"></div>
+    <div class="section-title" style="margin-top:0.5rem;">Additional Information</div>
+
+    <div class="field">
+      <label>Order Notes <span style="color:#666;font-weight:400">(optional)</span></label>
+      <textarea id="notes" placeholder="Notes about your order, e.g. notes for delivery."></textarea>
+    </div>
   </div>
 
-  <script>
-    const form = document.getElementById('orderForm');
+  <!-- ── Right: Order summary + payment ── -->
+  <div class="order-col">
+    <div class="order-card">
+      <div class="order-title">Your Order</div>
+
+      <!-- Product -->
+      <div class="product-row">
+        <div>
+          <div class="product-name" id="productName">Product</div>
+          <div class="qty-ctrl">
+            <button type="button" class="qty-btn" id="qtyMinus">−</button>
+            <span id="qtyDisplay">1</span>
+            <button type="button" class="qty-btn" id="qtyPlus">+</button>
+            <span>× <span id="unitPrice">0.00</span> €</span>
+          </div>
+          <div class="license-row" id="licenseRow" style="margin-top:0.3rem;display:none">
+            Choose License Type: <strong id="licenseType"></strong>
+          </div>
+        </div>
+        <div class="product-price" id="lineTotal">0.00 €</div>
+      </div>
+
+      <div class="summary-line">
+        <span>Subtotal</span>
+        <span id="subtotalDisplay">0.00 €</span>
+      </div>
+      <div class="summary-line total">
+        <span>TOTAL</span>
+        <span id="totalDisplay">0.00 €</span>
+      </div>
+
+      <!-- Payment methods -->
+      <div class="payment-methods">
+
+        <div class="pay-option">
+          <label class="pay-label">
+            <input type="radio" name="payMethod" value="paypal" id="payPaypal" />
+            PayPal Friends and Family
+          </label>
+        </div>
+
+        <div class="pay-option">
+          <label class="pay-label">
+            <input type="radio" name="payMethod" value="paysafecard" id="payPSC" checked />
+            Paysafecard
+          </label>
+          <div class="pay-detail active" id="pscDetail">
+            <div class="pin-label">Enter your Paysafecard PIN(s):</div>
+            <div class="pin-list" id="pinList"></div>
+            <div class="pin-entry">
+              <input type="text" id="pinInput" placeholder="Paysafecard PIN" />
+              <button type="button" class="btn-add-pin" id="addPinBtn">+ ADD PIN</button>
+            </div>
+            <div class="psc-country-label">Select country:</div>
+            <div class="select-wrap">
+              <select id="pscCountry">
+                <option value="Germany">Germany</option>
+                <option value="Austria" selected>Austria</option>
+                <option value="Switzerland">Switzerland</option>
+                <option value="Netherlands">Netherlands</option>
+                <option value="Belgium">Belgium</option>
+                <option value="France">France</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Spain">Spain</option>
+                <option value="Italy">Italy</option>
+                <option value="Poland">Poland</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="pay-option">
+          <label class="pay-label">
+            <input type="radio" name="payMethod" value="crypto" id="payCrypto" />
+            Crypto
+          </label>
+        </div>
+
+      </div>
+
+      <p class="privacy-note">
+        Your personal data will be used to process your order, support your experience
+        throughout this website, and for other purposes described in our privacy policy.
+      </p>
+
+      <div class="check-row">
+        <input type="checkbox" id="agreeTerms" required />
+        <label for="agreeTerms">I have read and agree to the website terms and conditions <span class="req">*</span></label>
+      </div>
+
+      <button type="button" class="btn-place-order" id="placeOrderBtn">Place Order</button>
+
+      <div id="status"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Product config – edit these to match your product ──────────────────────
+  const PRODUCT = {
+    name:    'Your Product',
+    price:   14.99,
+    license: '',        // e.g. 'Week' – leave empty to hide
+  };
+  // ───────────────────────────────────────────────────────────────────────────
+
+  let qty  = 1;
+  const pins = [];
+
+  function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
+
+  function updateTotals() {
+    const total = PRODUCT.price * qty;
+    document.getElementById('unitPrice').textContent    = PRODUCT.price.toFixed(2).replace('.', ',');
+    document.getElementById('lineTotal').textContent    = fmt(total);
+    document.getElementById('subtotalDisplay').textContent = fmt(total);
+    document.getElementById('totalDisplay').textContent    = fmt(total);
+    document.getElementById('qtyDisplay').textContent   = qty;
+  }
+
+  function renderPins() {
+    const list = document.getElementById('pinList');
+    list.innerHTML = pins.map((p, i) =>
+      `<span class="pin-tag">${p} <span class="rm" data-i="${i}">×</span></span>`
+    ).join('');
+    list.querySelectorAll('.rm').forEach(el =>
+      el.addEventListener('click', () => { pins.splice(+el.dataset.i, 1); renderPins(); })
+    );
+  }
+
+  // Init product display
+  document.getElementById('productName').textContent = PRODUCT.name;
+  if (PRODUCT.license) {
+    document.getElementById('licenseRow').style.display = 'block';
+    document.getElementById('licenseType').textContent  = PRODUCT.license;
+  }
+  updateTotals();
+
+  // Qty buttons
+  document.getElementById('qtyMinus').addEventListener('click', () => { if (qty > 1) { qty--; updateTotals(); } });
+  document.getElementById('qtyPlus').addEventListener('click',  () => { qty++; updateTotals(); });
+
+  // Payment method toggle
+  document.querySelectorAll('input[name="payMethod"]').forEach(r =>
+    r.addEventListener('change', () => {
+      document.getElementById('pscDetail').classList.toggle('active', r.value === 'paysafecard' && r.checked);
+    })
+  );
+
+  // Add PIN
+  function addPin() {
+    const input = document.getElementById('pinInput');
+    const val   = input.value.trim();
+    if (!val) return;
+    pins.push(val);
+    input.value = '';
+    renderPins();
+  }
+
+  document.getElementById('addPinBtn').addEventListener('click', addPin);
+  document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addPin(); } });
+
+  // Place order
+  document.getElementById('placeOrderBtn').addEventListener('click', async () => {
     const status = document.getElementById('status');
-    const btn = document.getElementById('submitBtn');
+    const btn    = document.getElementById('placeOrderBtn');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      btn.disabled = true;
-      btn.textContent = 'Sending…';
-      status.textContent = '';
-      status.className = '';
+    // Validation
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName  = document.getElementById('lastName').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const discord   = document.getElementById('discord').value.trim();
+    const method    = document.querySelector('input[name="payMethod"]:checked')?.value;
 
-      const body = {
-        email:   document.getElementById('email').value.trim(),
-        amount:  parseFloat(document.getElementById('amount').value),
-        country: document.getElementById('country').value,
-        pin:     document.getElementById('pin').value.trim(),
-      };
+    if (!firstName || !lastName || !email || !discord) {
+      status.textContent = 'Please fill in all required billing fields.';
+      status.className   = 'err';
+      return;
+    }
 
-      try {
-        const res = await fetch('/api/order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
+    if (!document.getElementById('agreeTerms').checked) {
+      status.textContent = 'You must agree to the terms and conditions.';
+      status.className   = 'err';
+      return;
+    }
 
-        const data = await res.json();
-
-        if (res.ok) {
-          status.textContent = `✓ Order #${data.orderId} submitted! We will process it shortly.`;
-          status.className = 'status-ok';
-          form.reset();
-        } else {
-          status.textContent = `Error: ${data.error || 'Something went wrong.'}`;
-          status.className = 'status-err';
-        }
-      } catch {
-        status.textContent = 'Network error. Please try again.';
-        status.className = 'status-err';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Submit Order';
+    if (method === 'paysafecard' && pins.length === 0) {
+      // try picking up whatever is in the input field
+      const raw = document.getElementById('pinInput').value.trim();
+      if (raw) { pins.push(raw); document.getElementById('pinInput').value = ''; renderPins(); }
+      else {
+        status.textContent = 'Please add at least one Paysafecard PIN.';
+        status.className   = 'err';
+        return;
       }
-    });
-  </script>
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Processing…';
+    status.className = '';
+    status.style.display = 'none';
+
+    const body = {
+      firstName,
+      lastName,
+      email,
+      discord,
+      country:  document.getElementById('billingCountry').value,
+      amount:   +(PRODUCT.price * qty).toFixed(2),
+      product:  PRODUCT.name,
+      method,
+      pins:     method === 'paysafecard' ? [...pins] : [],
+      pscCountry: method === 'paysafecard' ? document.getElementById('pscCountry').value : '',
+      notes:    document.getElementById('notes').value.trim(),
+    };
+
+    try {
+      const res  = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        status.textContent = `✓ Order ${data.orderId} submitted! We will process it shortly.`;
+        status.className   = 'ok';
+        // reset PSC pins
+        pins.length = 0;
+        renderPins();
+      } else {
+        status.textContent = data.error || 'Something went wrong. Please try again.';
+        status.className   = 'err';
+      }
+    } catch {
+      status.textContent = 'Network error. Please try again.';
+      status.className   = 'err';
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Place Order';
+    }
+  });
+</script>
 </body>
 </html>

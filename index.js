@@ -68,27 +68,37 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.post('/api/order', async (req, res) => {
-  const { email, amount, country, pin } = req.body;
+  const { firstName, lastName, email, discord, country, amount, product, method, pins, pscCountry, notes } = req.body;
 
-  if (!email || !amount || !country || !pin) {
-    return res.status(400).json({ error: 'All fields are required.' });
+  if (!firstName || !lastName || !email || !discord || !country || !amount || !method) {
+    return res.status(400).json({ error: 'All required fields must be filled.' });
+  }
+
+  if (method === 'paysafecard' && (!pins || pins.length === 0)) {
+    return res.status(400).json({ error: 'At least one Paysafecard PIN is required.' });
   }
 
   const orderId = nextOrderId();
-  const timestamp = `<t:${Math.floor(Date.now() / 1000)}:t>`;
+  const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-  // Build the embed matching the screenshot style
+  const fields = [
+    { name: 'Order ID', value: orderId,                           inline: true },
+    { name: 'Payment',  value: `${Number(amount).toFixed(2)} EUR`, inline: true },
+    { name: 'Country',  value: pscCountry || country,             inline: true },
+  ];
+
+  if (method === 'paysafecard') {
+    fields.push({ name: 'PIN(s)', value: `\`\`\`${pins.join('\n')}\`\`\`` });
+  }
+
+  fields.push({ name: 'Customer', value: `${email}\nDiscord: ${discord}` });
+  if (notes) fields.push({ name: 'Notes', value: notes });
+
   const embed = new EmbedBuilder()
     .setColor(0xe94560)
     .setTitle('🎉 New Paysafecard Order')
-    .addFields(
-      { name: 'Order ID', value: orderId,                      inline: true },
-      { name: 'Payment',  value: `${Number(amount).toFixed(2)} EUR`, inline: true },
-      { name: 'Country',  value: country,                      inline: true },
-      { name: 'PIN(s)',   value: `\`\`\`${pin}\`\`\`` },
-      { name: 'Customer', value: email },
-    )
-    .setFooter({ text: `Today at ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` });
+    .addFields(...fields)
+    .setFooter({ text: `Today at ${time}` });
 
   // Process / Cancel buttons
   const row = new ActionRowBuilder().addComponents(
