@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PaySafeCard Payment</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .card {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logo svg {
+      width: 56px;
+      height: 56px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e94560;
+      font-size: 1.4rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #8892b0;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    label {
+      display: block;
+      color: #ccd6f6;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.03em;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      background: #0f3460;
+      border: 1px solid #1a4a7a;
+      border-radius: 8px;
+      color: #e6f1ff;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 1.2rem;
+    }
+
+    input:focus, select:focus {
+      border-color: #e94560;
+    }
+
+    select option { background: #0f3460; }
+
+    .pin-note {
+      color: #8892b0;
+      font-size: 0.78rem;
+      margin-top: -1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.85rem;
+      background: #e94560;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 0.4rem;
+    }
+
+    button[type="submit"]:hover { background: #c73652; }
+    button[type="submit"]:active { transform: scale(0.98); }
+    button[type="submit"]:disabled { background: #555; cursor: not-allowed; }
+
+    #status {
+      margin-top: 1.2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      min-height: 1.2rem;
+    }
+
+    .status-ok  { color: #43b581; }
+    .status-err { color: #f04747; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <!-- PaySafeCard-style icon -->
+      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="56" height="56" rx="12" fill="#e94560"/>
+        <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+              font-size="26" font-weight="bold" fill="white" font-family="sans-serif">PSC</text>
+      </svg>
+    </div>
+    <h1>PaySafeCard Payment</h1>
+    <p class="subtitle">Enter your voucher details to complete the order</p>
+
+    <form id="orderForm">
+      <label for="email">Your Email</label>
+      <input type="email" id="email" name="email" placeholder="you@example.com" required />
+
+      <label for="amount">Amount (EUR)</label>
+      <input type="number" id="amount" name="amount" min="0.01" step="0.01" placeholder="e.g. 10.00" required />
+
+      <label for="country">Country</label>
+      <select id="country" name="country" required>
+        <option value="" disabled selected>Select country…</option>
+        <option value="Germany">Germany</option>
+        <option value="Austria">Austria</option>
+        <option value="Switzerland">Switzerland</option>
+        <option value="Netherlands">Netherlands</option>
+        <option value="Belgium">Belgium</option>
+        <option value="France">France</option>
+        <option value="United Kingdom">United Kingdom</option>
+        <option value="Spain">Spain</option>
+        <option value="Italy">Italy</option>
+        <option value="Poland">Poland</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label for="pin">PaySafeCard PIN(s)</label>
+      <input type="text" id="pin" name="pin"
+             placeholder="e.g. 1234-5678-9012-3456"
+             pattern="[\d\-\s,]+"
+             title="Digits, dashes, spaces or commas (for multiple PINs)"
+             required />
+      <p class="pin-note">Multiple PINs? Separate them with a comma.</p>
+
+      <button type="submit" id="submitBtn">Submit Order</button>
+    </form>
+
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('orderForm');
+    const status = document.getElementById('status');
+    const btn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      status.textContent = '';
+      status.className = '';
+
+      const body = {
+        email:   document.getElementById('email').value.trim(),
+        amount:  parseFloat(document.getElementById('amount').value),
+        country: document.getElementById('country').value,
+        pin:     document.getElementById('pin').value.trim(),
+      };
+
+      try {
+        const res = await fetch('/api/order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          status.textContent = `✓ Order #${data.orderId} submitted! We will process it shortly.`;
+          status.className = 'status-ok';
+          form.reset();
+        } else {
+          status.textContent = `Error: ${data.error || 'Something went wrong.'}`;
+          status.className = 'status-err';
+        }
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        status.className = 'status-err';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Submit Order';
+      }
+    });
+  </script>
+</body>
+</html>
